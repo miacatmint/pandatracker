@@ -1,7 +1,0 @@
-{
-  "functions": {
-    "api/weather.js": {
-      "runtime": "edge"
-    }
-  }
-}
