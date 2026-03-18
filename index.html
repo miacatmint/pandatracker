@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>熊猫成长日记</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F2FAF5;
+  --card: #FFFFFF;
+  --pri: #2EB872;
+  --pri-d: #1A9458;
+  --pri-light: #E8F8EF;
+  --pri-mid: #A7E8C5;
+  --green: #2EB872;
+  --green-light: #E8F8EF;
+  --yellow: #F5A623;
+  --yellow-light: #FFF5E6;
+  --red: #F05252;
+  --red-light: #FEF0F0;
+  --purple: #8B5CF6;
+  --purple-light: #F5F3FF;
+  --teal: #0EA5E9;
+  --teal-light: #E0F4FD;
+  --text: #1A2E1F;
+  --text2: #4D6B58;
+  --text3: #92B09E;
+  --border: #D4EDDE;
+  --radius: 18px;
+  --shadow: 0 2px 8px rgba(46,184,114,0.08), 0 4px 16px rgba(0,0,0,0.05);
+  --shadow-lg: 0 4px 6px rgba(0,0,0,0.05), 0 10px 40px rgba(46,184,114,0.12);
+  --panda-black: #2C2C2C;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  background-image: radial-gradient(circle at 20% 20%, rgba(46,184,114,0.06) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(245,166,35,0.05) 0%, transparent 50%);
+  color: var(--text);
+  overflow-x: hidden;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── CHART CARD ── */
+.chart-card {
+  background: var(--card); border-radius: 20px;
+  padding: 16px; box-shadow: var(--shadow); margin-bottom: 12px;
+  border: 1.5px solid rgba(167,232,197,0.4);
+}
+.chart-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+.chart-sub { font-size: 11px; color: var(--text2); margin-bottom: 14px; }
+.chart-wrap { position: relative; }
+
+/* ── LAYOUT ── */
+.app { display: flex; flex-direction: column; height: 100vh; }
+.page { display: none; flex: 1; overflow-y: auto; padding-bottom: 72px; }
+.page.active { display: block; }
+
+/* ── NAV ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 64px;
+  background: var(--card); border-top: 1px solid var(--border);
+  display: flex; z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 3px; border: none; background: none;
+  cursor: pointer; color: var(--text3); font-size: 10px;
+  font-family: inherit; transition: color 0.2s;
+}
+.nav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.nav-btn.active { color: var(--pri); }
+.nav-btn.active svg { stroke: var(--pri); }
+
+/* ── HEADER ── */
+.page-header {
+  padding: 52px 20px 14px;
+  background: var(--card);
+  border-bottom: 1.5px solid var(--border);
+  position: sticky; top: 0; z-index: 50;
+}
+.header-row { display: flex; align-items: center; justify-content: space-between; }
+.page-title {
+  font-size: 18px; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: 8px;
+}
+.panda-logo { font-size: 26px; filter: drop-shadow(0 2px 4px rgba(46,184,114,0.3)); }
+
+/* ── BABY HERO CARD ── */
+.hero-card {
+  margin: 16px; border-radius: 24px;
+  background: linear-gradient(135deg, #1A6B40 0%, #2EB872 55%, #52D68A 100%);
+  padding: 20px; color: white; position: relative; overflow: hidden;
+  box-shadow: 0 8px 32px rgba(46,184,114,0.35);
+}
+.hero-card::before {
+  content: '🐾'; position: absolute; right: 14px; top: 10px;
+  font-size: 52px; opacity: 0.12; transform: rotate(15deg);
+}
+.hero-card::after {
+  content: ''; position: absolute; left: -20px; bottom: -24px;
+  width: 80px; height: 80px; border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+}
+.hero-inner { display: flex; align-items: center; gap: 16px; position: relative; z-index: 1; }
+.hero-avatar {
+  width: 68px; height: 68px; border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; overflow: hidden; flex-shrink: 0; cursor: pointer;
+  position: relative;
+}
+.hero-avatar img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+.hero-info h2 { font-size: 20px; font-weight: 700; margin-bottom: 3px; }
+.hero-age { font-size: 13px; opacity: 0.85; margin-bottom: 8px; }
+.hero-bday {
+  font-size: 11px; opacity: 0.7;
+  background: rgba(255,255,255,0.15);
+  display: inline-block; padding: 2px 10px; border-radius: 20px;
+}
+.hero-sync {
+  position: absolute; top: 16px; right: 16px; z-index: 1;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255,255,255,0.15); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 14px;
+}
+
+/* ── SECTION ── */
+.section { padding: 0 16px; margin-top: 20px; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.section-title { font-size: 15px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.section-more { font-size: 12px; color: var(--pri); cursor: pointer; }
+
+/* ── STAT GRID ── */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-card {
+  background: var(--card); border-radius: 20px;
+  padding: 14px 14px 12px; box-shadow: var(--shadow);
+  border: 1.5px solid rgba(167,232,197,0.5);
+  position: relative; overflow: hidden;
+}
+.stat-card::after {
+  content: ''; position: absolute; bottom: -12px; right: -12px;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--pri-light); opacity: 0.7;
+}
+.stat-label { font-size: 11px; color: var(--text2); margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+.stat-value { font-size: 24px; font-weight: 700; color: var(--text); line-height: 1; }
+.stat-sub { font-size: 10px; color: var(--text3); margin-top: 3px; }
+.stat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+
+/* ── INSIGHT CARD ── */
+.insight-card {
+  background: linear-gradient(135deg, var(--pri-light), #FFFDE8);
+  border: 1px solid var(--pri-mid);
+  border-radius: var(--radius); padding: 14px; margin-bottom: 12px;
+}
+.insight-label { font-size: 10px; font-weight: 700; color: var(--pri-d); letter-spacing: 1px; margin-bottom: 8px; }
+.insight-items { display: flex; flex-direction: column; gap: 6px; }
+.insight-item { font-size: 12px; color: var(--text); line-height: 1.6; padding-left: 16px; position: relative; }
+.insight-item::before { content: '🐾'; position: absolute; left: 0; font-size: 9px; top: 2px; }
+
+/* ── CORRELATION BARS ── */
+.corr-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.corr-label { font-size: 11px; color: var(--text2); width: 70px; flex-shrink: 0; text-align: right; }
+.corr-bar-wrap { flex: 1; height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+.corr-bar { height: 100%; border-radius: 5px; transition: width 0.8s ease; }
+.corr-val { font-size: 11px; color: var(--text2); width: 20px; }
+
+/* ── FORM ── */
+.form-page-header {
+  padding: 52px 20px 16px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+}
+.form-date-row { display: flex; align-items: center; justify-content: space-between; }
+.date-pill {
+  background: var(--yellow-light); color: var(--yellow);
+  font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 20px;
+  border: 1px solid #FFD9A0;
+}
+.form-section {
+  background: var(--card); border-radius: var(--radius);
+  margin: 12px 16px 0; padding: 16px; box-shadow: var(--shadow);
+  border: 1px solid rgba(212,237,222,0.6);
+}
+.form-section-title {
+  font-size: 13px; font-weight: 700; color: var(--text);
+  margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
+}
+.form-group { margin-bottom: 14px; }
+.form-group:last-child { margin-bottom: 0; }
+.form-label { font-size: 11px; color: var(--text2); font-weight: 500; margin-bottom: 7px; display: block; }
+
+/* Picker */
+.picker-row { display: flex; align-items: center; gap: 10px; }
+.picker-box {
+  flex: 1; height: 44px; background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.picker-arrow {
+  position: absolute; background: none; border: none; cursor: pointer;
+  color: var(--pri); font-size: 18px; padding: 10px; line-height: 1;
+}
+.picker-arrow.l { left: 2px; }
+.picker-arrow.r { right: 2px; }
+.picker-val { font-size: 20px; font-weight: 700; }
+.picker-unit { font-size: 11px; color: var(--text2); margin-left: 2px; }
+
+/* Chips */
+.chip-wrap { display: flex; flex-wrap: wrap; gap: 7px; }
+.chip {
+  padding: 6px 13px; border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: white; font-size: 12px; color: var(--text2);
+  cursor: pointer; transition: all 0.15s;
+  font-family: inherit; white-space: nowrap;
+}
+.chip.on { background: var(--pri); border-color: var(--pri); color: white; font-weight: 600; }
+.chip.on-green { background: var(--green); border-color: var(--green); color: white; font-weight: 600; }
+.chip.on-red { background: var(--red); border-color: var(--red); color: white; font-weight: 600; }
+.chip.on-yellow { background: var(--yellow); border-color: var(--yellow); color: white; font-weight: 600; }
+
+/* Toggle pair */
+.tog-row { display: flex; gap: 8px; }
+.tog-btn {
+  flex: 1; padding: 10px; border-radius: 12px;
+  border: 1.5px solid var(--border); background: white;
+  font-size: 13px; color: var(--text2); cursor: pointer;
+  font-family: inherit; transition: all 0.15s;
+}
+.tog-btn.yes { background: var(--green-light); border-color: var(--green); color: var(--pri-d); font-weight: 700; }
+.tog-btn.no { background: var(--red-light); border-color: var(--red); color: var(--red); font-weight: 700; }
+
+/* Time */
+.time-in {
+  width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
+  border-radius: 12px; font-size: 16px; font-family: inherit;
+  background: var(--bg); color: var(--text); outline: none;
+  -webkit-appearance: none;
+}
+.time-in:focus { border-color: var(--pri); background: white; }
+
+/* Textarea */
+.note-in {
+  width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
+  border-radius: 12px; font-size: 13px; font-family: inherit;
+  background: var(--bg); color: var(--text); outline: none;
+  resize: none; min-height: 76px; line-height: 1.6;
+}
+.note-in:focus { border-color: var(--pri); background: white; }
+
+/* Save btn */
+.save-btn {
+  display: block; width: calc(100% - 32px); margin: 16px auto 24px;
+  padding: 15px; border-radius: 16px; border: none;
+  background: linear-gradient(135deg, var(--pri), var(--pri-d));
+  color: white; font-size: 15px; font-weight: 700;
+  font-family: inherit; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(46,184,114,0.4);
+  transition: transform 0.15s, opacity 0.15s;
+}
+.save-btn:active { transform: scale(0.98); }
+.save-btn:disabled { opacity: 0.6; cursor: default; }
+
+/* ── RECORDS PAGE ── */
+.rec-search {
+  margin: 12px 16px 0; padding: 10px 14px;
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 12px; font-size: 13px; font-family: inherit;
+  color: var(--text); outline: none; width: calc(100% - 32px);
+}
+.rec-item {
+  background: var(--card); border-radius: var(--radius);
+  margin: 10px 16px 0; padding: 14px; box-shadow: var(--shadow);
+  cursor: pointer; transition: box-shadow 0.15s;
+  border: 1px solid rgba(212,237,222,0.5);
+}
+.rec-item:active { box-shadow: var(--shadow-lg); }
+.rec-date { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+.rec-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.rc {
+  font-size: 10px; padding: 2px 8px; border-radius: 8px;
+  font-weight: 500;
+}
+.rc-b { background: var(--pri-light); color: var(--pri-d); }
+.rc-g { background: var(--green-light); color: var(--green); }
+.rc-r { background: var(--red-light); color: var(--red); }
+.rc-y { background: var(--yellow-light); color: var(--yellow); }
+.rc-p { background: var(--purple-light); color: var(--purple); }
+.rec-note { font-size: 11px; color: var(--text3); margin-top: 6px; }
+
+/* ── DETAIL MODAL ── */
+.modal-bg {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(6px); z-index: 200;
+  display: flex; align-items: flex-end;
+  opacity: 0; pointer-events: none; transition: opacity 0.25s;
+}
+.modal-bg.open { opacity: 1; pointer-events: all; }
+.modal-sheet {
+  background: white; border-radius: 24px 24px 0 0;
+  width: 100%; max-height: 92vh; overflow-y: auto;
+  padding: 0 0 40px;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+}
+.modal-bg.open .modal-sheet { transform: translateY(0); }
+.modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 14px auto 0; }
+.modal-header {
+  padding: 14px 20px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border); position: sticky; top: 0;
+  background: white; z-index: 1;
+}
+.modal-title { font-size: 16px; font-weight: 700; }
+.modal-close {
+  width: 30px; height: 30px; border-radius: 50%; background: var(--bg);
+  border: none; cursor: pointer; font-size: 16px; display: flex;
+  align-items: center; justify-content: center;
+}
+.modal-edit-btn {
+  padding: 6px 14px; border-radius: 20px; border: none;
+  background: var(--pri); color: white; font-size: 12px;
+  font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.detail-section { padding: 14px 20px 0; }
+.detail-label { font-size: 10px; font-weight: 700; color: var(--text3); letter-spacing: 0.5px; margin-bottom: 6px; }
+.detail-value { font-size: 13px; color: var(--text); margin-bottom: 12px; }
+.detail-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 12px; }
+
+/* ── SETUP MODAL ── */
+.setup-field { margin-bottom: 14px; }
+.setup-label { font-size: 11px; color: var(--text2); font-weight: 500; margin-bottom: 5px; display: block; }
+.setup-in {
+  width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
+  border-radius: 12px; font-size: 14px; font-family: inherit;
+  background: var(--bg); color: var(--text); outline: none;
+}
+.setup-in:focus { border-color: var(--pri); background: white; }
+.avatar-upload {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 20px; border: 2px dashed var(--pri-mid); border-radius: 16px;
+  cursor: pointer; margin-bottom: 16px; background: var(--pri-light);
+}
+.av-circle {
+  width: 70px; height: 70px; border-radius: 50%;
+  background: white; border: 3px solid var(--pri-mid);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; overflow: hidden;
+}
+.av-circle img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ── MILESTONE ── */
+.ms-card {
+  background: var(--card); border-radius: var(--radius);
+  padding: 14px; box-shadow: var(--shadow); margin-bottom: 10px;
+  border-left: 4px solid var(--pri);
+  display: flex; gap: 12px;
+  border: 1px solid rgba(212,237,222,0.7);
+  border-left: 4px solid var(--pri);
+}
+.ms-card.upcoming { border-left-color: var(--yellow) !important; }
+.ms-card.done { border-left-color: var(--pri-d) !important; }
+.ms-em { font-size: 26px; flex-shrink: 0; }
+.ms-body h4 { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+.ms-body p { font-size: 12px; color: var(--text2); line-height: 1.5; }
+.ms-tag {
+  display: inline-block; padding: 2px 8px; border-radius: 8px;
+  font-size: 10px; font-weight: 600; margin-top: 5px;
+}
+
+/* ── WEEK TABS ── */
+.period-tabs { display: flex; background: var(--pri-light); border-radius: 10px; padding: 3px; margin-bottom: 14px; }
+.period-tab {
+  flex: 1; padding: 6px; text-align: center; border-radius: 8px;
+  font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text2);
+  border: none; background: none; font-family: inherit; transition: all 0.15s;
+}
+.period-tab.active { background: white; color: var(--pri-d); box-shadow: 0 1px 4px rgba(46,184,114,0.2); }
+
+/* ── MISC ── */
+.empty { text-align: center; padding: 48px 20px; color: var(--text3); }
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty p { font-size: 13px; line-height: 1.7; }
+.toast {
+  position: fixed; bottom: 80px; left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--panda-black); color: white;
+  padding: 9px 18px; border-radius: 20px; font-size: 12px;
+  z-index: 500; opacity: 0; transition: all 0.25s; white-space: nowrap;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.loading-overlay {
+  position: fixed; inset: 0; background: rgba(242,250,245,0.85);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 400; backdrop-filter: blur(4px);
+}
+.spinner {
+  width: 32px; height: 32px; border: 3px solid var(--border);
+  border-top-color: var(--pri); border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.divider { height: 1px; background: var(--border); margin: 14px 0; }
+::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ══════════════════════════════ HOME PAGE ══════════════════════════════ -->
+<div class="page active" id="pg-home">
+  <div class="page-header">
+    <div class="header-row">
+      <div class="page-title"><span class="panda-logo">🐼</span>熊猫成长日记</div>
+      <button class="modal-close" style="background:var(--bg)" onclick="openSetup()">⚙️</button>
+    </div>
+  </div>
+
+  <!-- Baby Hero -->
+  <div class="hero-card" onclick="openSetup()">
+    <button class="hero-sync" onclick="event.stopPropagation();syncNow()" title="同步">↻</button>
+    <div class="hero-inner">
+      <div class="hero-avatar" id="hero-av">
+        <span id="hero-av-em">🐼</span>
+        <img id="hero-av-img" src="" alt="" style="display:none">
+      </div>
+      <div class="hero-info">
+        <h2 id="hero-name">宝宝</h2>
+        <div class="baby-age hero-age" id="hero-age">点击设置宝宝信息</div>
+        <div class="hero-bday" id="hero-bday">🎂 生日未设置</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">🐾 数据概览</div>
+      <div class="period-tabs" style="width:186px;margin-bottom:0">
+        <button class="period-tab active" onclick="setPeriod('week',this)">近7天</button>
+        <button class="period-tab" onclick="setPeriod('month',this)">近30天</button>
+        <button class="period-tab" onclick="setPeriod('all',this)">全部</button>
+      </div>
+    </div>
+    <div class="stat-grid" id="stat-grid">
+      <div class="stat-card"><div class="stat-label">😴 平均睡眠</div><div class="stat-value" id="st-sleep">--</div><div class="stat-sub">小时/晚</div></div>
+      <div class="stat-card"><div class="stat-label">🌡️ 平均室温</div><div class="stat-value" id="st-temp">--</div><div class="stat-sub">°C</div></div>
+      <div class="stat-card"><div class="stat-label">😊 心情好天数</div><div class="stat-value" id="st-mood">--</div><div class="stat-sub">天</div></div>
+      <div class="stat-card"><div class="stat-label">🩺 湿疹发作</div><div class="stat-value" id="st-ecz">--</div><div class="stat-sub">次（中度+）</div></div>
+    </div>
+  </div>
+
+  <!-- Sleep Chart -->
+  <div class="section" style="margin-top:16px">
+    <div class="chart-card">
+      <div class="chart-title">😴 睡眠时长趋势</div>
+      <div class="chart-sub">每晚实际睡眠时长（小时）</div>
+      <div class="chart-wrap" style="height:160px"><canvas id="chart-sleep"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Sleep Quality + Mood -->
+  <div class="section">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="chart-card" style="margin-bottom:0">
+        <div class="chart-title" style="font-size:12px">😴 睡眠质量</div>
+        <div class="chart-wrap" style="height:110px"><canvas id="chart-sq"></canvas></div>
+      </div>
+      <div class="chart-card" style="margin-bottom:0">
+        <div class="chart-title" style="font-size:12px">😊 宝宝心情</div>
+        <div class="chart-wrap" style="height:110px"><canvas id="chart-mood"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Eczema + Nose frequency -->
+  <div class="section" style="margin-top:12px">
+    <div class="chart-card">
+      <div class="chart-title">🩺 湿疹 & 鼻子频率统计</div>
+      <div class="chart-sub">各症状出现次数</div>
+      <div class="chart-wrap" style="height:150px"><canvas id="chart-health"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ══ CORRELATION GROUP: 湿疹 ══ -->
+  <div class="section">
+    <div class="section-title" style="margin-bottom:10px">🔍 湿疹相关性分析</div>
+
+    <div class="chart-card">
+      <div class="chart-title">🌡️ 室温 × 湿疹</div>
+      <div class="chart-sub">各温度区间湿疹（轻微+）发生率</div>
+      <div id="corr-temp-ecz"></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">💧 湿度 × 湿疹</div>
+      <div class="chart-sub">各湿度区间湿疹发生率</div>
+      <div id="corr-humid-ecz"></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">👕 睡袋 × 湿疹</div>
+      <div class="chart-sub">不同睡袋时湿疹发生率</div>
+      <div id="corr-bag-ecz"></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">💊 激素药膏 × 湿疹次日情况</div>
+      <div class="chart-sub">用药后次日湿疹改善率</div>
+      <div id="corr-steroid-ecz"></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">💊 抗过敏药 × 湿疹</div>
+      <div class="chart-sub">服药日 vs 未服药日的湿疹发生率</div>
+      <div id="corr-anti-ecz"></div>
+    </div>
+  </div>
+
+  <!-- ══ CORRELATION GROUP: 鼻子 ══ -->
+  <div class="section">
+    <div class="section-title" style="margin-bottom:10px">👃 鼻子相关性分析</div>
+
+    <div class="chart-card">
+      <div class="chart-title">🌡️ 室温 × 鼻子</div>
+      <div class="chart-sub">各温度区间鼻涕/咳嗽发生率</div>
+      <div id="corr-temp-nose"></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">💧 湿度 × 鼻子</div>
+      <div class="chart-sub">各湿度区间鼻涕/咳嗽发生率</div>
+      <div id="corr-humid-nose"></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">👕 睡袋 × 鼻子</div>
+      <div class="chart-sub">不同睡袋时鼻涕/咳嗽发生率</div>
+      <div id="corr-bag-nose"></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">💊 抗过敏药 × 鼻子</div>
+      <div class="chart-sub">服药日 vs 未服药日的鼻涕发生率</div>
+      <div id="corr-anti-nose"></div>
+    </div>
+  </div>
+
+  <!-- ══ SLEEP CORRELATIONS ══ -->
+  <div class="section">
+    <div class="section-title" style="margin-bottom:10px">💤 睡眠相关性分析</div>
+
+    <div class="chart-card">
+      <div class="chart-title">👕 睡袋 × 睡眠质量</div>
+      <div class="chart-sub">不同睡袋下"好"睡眠的占比</div>
+      <div id="corr-bag-sleep"></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">😊 心情 × 睡眠时长</div>
+      <div class="chart-sub">不同心情下的平均睡眠时长</div>
+      <div id="corr-mood-sleep"></div>
+    </div>
+  </div>
+
+  <!-- AI Insights -->
+  <div class="section">
+    <div class="insight-card" id="insight-box">
+      <div class="insight-label">✨ 智能分析建议</div>
+      <div class="insight-items" id="insight-items">
+        <div class="insight-item" style="color:var(--text3)">记录数据后自动生成分析建议</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Milestones -->
+  <div class="section">
+    <div class="section-title" style="margin-bottom:12px">🏆 成长里程碑 <span class="section-pill" id="ms-age-badge" style="font-size:10px;background:var(--pri-light);color:var(--pri-d);padding:2px 8px;border-radius:10px;font-weight:600"></span></div>
+    <div id="ms-list"><div class="empty"><div class="empty-icon">🌱</div><p>设置宝宝生日后<br>查看专属里程碑</p></div></div>
+  </div>
+
+  <!-- Tips -->
+  <div class="section" style="padding-bottom:8px">
+    <div class="section-title" style="margin-bottom:12px">💡 育儿建议</div>
+    <div id="tips-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ LOG PAGE ══════════════════════════════ -->
+<div class="page" id="pg-log">
+  <div class="form-page-header">
+    <div class="form-date-row">
+      <div class="page-title">✏️ 每日记录</div>
+      <div class="date-pill" id="log-date-badge">今天</div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-title">🌡️ 环境</div>
+    <div class="form-group">
+      <label class="form-label">室温</label>
+      <div class="picker-box"><button class="picker-arrow l" onclick="adj('temp',-1)">‹</button><span class="picker-val" id="pv-temp">22</span><span class="picker-unit">°C</span><button class="picker-arrow r" onclick="adj('temp',1)">›</button></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">湿度</label>
+      <div class="picker-box"><button class="picker-arrow l" onclick="adj('humid',-5)">‹</button><span class="picker-val" id="pv-humid">55</span><span class="picker-unit">%</span><button class="picker-arrow r" onclick="adj('humid',5)">›</button></div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-title">👕 穿着</div>
+    <div class="form-group">
+      <label class="form-label">睡袋</label>
+      <div class="chip-wrap">
+        <div class="chip" data-g="sleepbag" data-v="0.2tog" onclick="pick(this,false)">0.2 tog</div>
+        <div class="chip" data-g="sleepbag" data-v="1tog" onclick="pick(this,false)">1 tog</div>
+        <div class="chip" data-g="sleepbag" data-v="薄棉睡袋" onclick="pick(this,false)">薄棉睡袋</div>
+        <div class="chip" data-g="sleepbag" data-v="厚棉睡袋" onclick="pick(this,false)">厚棉睡袋</div>
+        <div class="chip" data-g="sleepbag" data-v="不用睡袋" onclick="pick(this,false)">不用睡袋</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">衣服（可多选）</label>
+      <div class="chip-wrap">
+        <div class="chip" data-g="clothes" data-v="长袖上衣" onclick="pick(this,true)">长袖上衣</div>
+        <div class="chip" data-g="clothes" data-v="长裤" onclick="pick(this,true)">长裤</div>
+        <div class="chip" data-g="clothes" data-v="短袖上衣" onclick="pick(this,true)">短袖上衣</div>
+        <div class="chip" data-g="clothes" data-v="短裤" onclick="pick(this,true)">短裤</div>
+        <div class="chip" data-g="clothes" data-v="背心" onclick="pick(this,true)">背心</div>
+        <div class="chip" data-g="clothes" data-v="其他" onclick="pick(this,true)">其他</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-title">🩺 健康</div>
+    <div class="form-group">
+      <label class="form-label">鼻子情况（可多选）</label>
+      <div class="chip-wrap">
+        <div class="chip" data-g="nose" data-v="严重鼻涕" onclick="pick(this,true)">严重鼻涕 😷</div>
+        <div class="chip" data-g="nose" data-v="轻微鼻涕" onclick="pick(this,true)">轻微鼻涕 🤧</div>
+        <div class="chip" data-g="nose" data-v="咳嗽" onclick="pick(this,true)">咳嗽 🤒</div>
+        <div class="chip" data-g="nose" data-v="打鼾" onclick="pick(this,true)">打鼾 💤</div>
+        <div class="chip" data-g="nose" data-v="正常" onclick="pick(this,true)">正常 ✅</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">湿疹情况</label>
+      <div class="chip-wrap">
+        <div class="chip" data-g="eczema" data-v="严重" onclick="pick(this,false)">严重 🔴</div>
+        <div class="chip" data-g="eczema" data-v="中等" onclick="pick(this,false)">中等 🟡</div>
+        <div class="chip" data-g="eczema" data-v="轻微" onclick="pick(this,false)">轻微 🟢</div>
+        <div class="chip" data-g="eczema" data-v="无" onclick="pick(this,false)">无 ✨</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">大便情况</label>
+      <div class="chip-wrap">
+        <div class="chip" data-g="poop" data-v="正常" onclick="pick(this,false)">正常 💩</div>
+        <div class="chip" data-g="poop" data-v="干" onclick="pick(this,false)">干 🟤</div>
+        <div class="chip" data-g="poop" data-v="稀" onclick="pick(this,false)">稀 💧</div>
+        <div class="chip" data-g="poop" data-v="无" onclick="pick(this,false)">无</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">是否吃抗过敏药</label>
+      <div class="tog-row">
+        <button class="tog-btn" data-g="antihistamine" data-v="是" onclick="tog(this)">✅ 是</button>
+        <button class="tog-btn" data-g="antihistamine" data-v="否" onclick="tog(this)">❌ 否</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">是否用激素药膏</label>
+      <div class="tog-row">
+        <button class="tog-btn" data-g="steroid" data-v="是" onclick="tog(this)">✅ 是</button>
+        <button class="tog-btn" data-g="steroid" data-v="否" onclick="tog(this)">❌ 否</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-title">😴 睡眠</div>
+    <div class="form-group">
+      <label class="form-label">今日起床时间</label>
+      <input type="time" class="time-in" id="f-wake" value="07:00">
+    </div>
+    <div class="form-group">
+      <label class="form-label">昨晚入睡时间</label>
+      <input type="time" class="time-in" id="f-sleep" value="20:00">
+    </div>
+    <div class="form-group">
+      <label class="form-label">睡眠质量</label>
+      <div class="chip-wrap">
+        <div class="chip" data-g="sleepq" data-v="差" onclick="pick(this,false)">差 😩</div>
+        <div class="chip" data-g="sleepq" data-v="一般" onclick="pick(this,false)">一般 😐</div>
+        <div class="chip" data-g="sleepq" data-v="好" onclick="pick(this,false)">好 😊</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-title">😄 宝宝状态</div>
+    <div class="form-group">
+      <label class="form-label">今日心情</label>
+      <div class="chip-wrap">
+        <div class="chip" data-g="mood" data-v="好" onclick="pick(this,false)">开心 😄</div>
+        <div class="chip" data-g="mood" data-v="一般" onclick="pick(this,false)">一般 😐</div>
+        <div class="chip" data-g="mood" data-v="差" onclick="pick(this,false)">烦躁 😢</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">今日备注</label>
+      <textarea class="note-in" id="f-note" placeholder="记录今天的特别情况、趣事…"></textarea>
+    </div>
+  </div>
+
+  <button class="save-btn" id="save-btn" onclick="saveRecord()">💾 保存记录</button>
+</div>
+
+<!-- ══════════════════════════════ RECORDS PAGE ══════════════════════════════ -->
+<div class="page" id="pg-records">
+  <div class="page-header">
+    <div class="header-row">
+      <div class="page-title">📖 历史记录</div>
+      <button style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:white;font-size:12px;cursor:pointer;font-family:inherit" onclick="exportCSV()">导出 CSV</button>
+    </div>
+    <input class="rec-search" style="margin-top:10px;width:100%" placeholder="🔍 搜索日期或备注…" id="rec-search" oninput="filterRecords()">
+  </div>
+  <div id="rec-list" style="padding-bottom:16px"></div>
+</div>
+
+<!-- ══════════════════════════════ BOTTOM NAV ══════════════════════════════ -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nb-home" onclick="goPage('home')">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    首页
+  </button>
+  <button class="nav-btn" id="nb-log" onclick="goPage('log')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    记录
+  </button>
+  <button class="nav-btn" id="nb-records" onclick="goPage('records')">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    历史
+  </button>
+</nav>
+
+<!-- SETUP MODAL -->
+<div class="modal-bg" id="modal-setup" onclick="bgClose(event,'modal-setup')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">宝贝信息设置</div>
+      <button class="modal-close" onclick="closeModal('modal-setup')">✕</button>
+    </div>
+    <div style="padding:16px 20px 0">
+      <div class="avatar-upload" onclick="document.getElementById('av-input').click()">
+        <div class="av-circle" id="setup-av">
+          <span id="setup-av-em">🐼</span>
+          <img id="setup-av-img" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%">
+        </div>
+        <div style="font-size:12px;color:var(--text2)">点击上传宝宝头像</div>
+        <input type="file" id="av-input" accept="image/*" style="display:none" onchange="handleAv(event)">
+      </div>
+      <div class="setup-field">
+        <label class="setup-label">宝宝昵称</label>
+        <input class="setup-in" id="s-name" type="text" placeholder="例如：小豆包" maxlength="10">
+      </div>
+      <div class="setup-field">
+        <label class="setup-label">出生日期</label>
+        <input class="setup-in" id="s-bday" type="date">
+      </div>
+      <div class="setup-field">
+        <label class="setup-label">性别</label>
+        <div class="chip-wrap">
+          <div class="chip" data-g="gender" data-v="男宝" onclick="pick(this,false)">👦 男宝</div>
+          <div class="chip" data-g="gender" data-v="女宝" onclick="pick(this,false)">👧 女宝</div>
+        </div>
+      </div>
+      <button class="save-btn" style="margin:16px 0 0" onclick="saveSetup()">保存设置</button>
+      <button style="width:100%;padding:10px;border:none;background:none;color:var(--text3);font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:8px" onclick="closeModal('modal-setup')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-bg" id="modal-detail" onclick="bgClose(event,'modal-detail')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="detail-title">记录详情</div>
+      <div style="display:flex;gap:8px">
+        <button class="modal-edit-btn" onclick="editRecord()">编辑</button>
+        <button class="modal-close" onclick="closeModal('modal-detail')">✕</button>
+      </div>
+    </div>
+    <div id="detail-body" style="padding-bottom:20px"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// SUPABASE INIT
+// ══════════════════════════════════════════════════════════
+const SB_URL = 'https://eygmoiqcenbkojerbuyp.supabase.co';
+const SB_KEY = 'sb_publishable_hh0BZJRLyd87TX-C-9e5vw_X-1Km5KK';
+const { createClient } = supabase;
+const db = createClient(SB_URL, SB_KEY);
+
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let cfg = { name:'', birthday:'', gender:'', avatar:null };
+let records = [];
+let currentPeriod = 'week';
+let editingId = null;
+let currentDetailId = null;
+let charts = {};
+let fv = { temp:22, humid:55 };
+
+// ══════════════════════════════════════════════════════════
+// DB SETUP
+// ══════════════════════════════════════════════════════════
+async function ensureTable() {
+  // Try inserting a test to see if table exists; if not, we'll use localStorage fallback
+  const { error } = await db.from('records').select('id').limit(1);
+  if (error && error.code === '42P01') {
+    // Table doesn't exist - show instructions
+    showToast('请先在 Supabase 建立 records 表 ⚠️');
+  }
+}
+
+async function loadRecords() {
+  showLoading(true);
+  try {
+    const { data, error } = await db.from('records').select('*').order('date', { ascending: false });
+    if (error) throw error;
+    records = data || [];
+    // Also load config
+    const { data: cfgData } = await db.from('config').select('*').eq('key','baby').single();
+    if (cfgData && cfgData.value) {
+      cfg = { ...cfg, ...cfgData.value };
+      applyConfig();
+    }
+  } catch(e) {
+    console.warn('DB load failed, using localStorage', e.message);
+    const ls = localStorage.getItem('panda-records');
+    if (ls) records = JSON.parse(ls);
+    const lc = localStorage.getItem('panda-cfg');
+    if (lc) { cfg = JSON.parse(lc); applyConfig(); }
+  }
+  showLoading(false);
+  refreshHome();
+  renderRecordsList();
+}
+
+async function saveRecordToDB(rec) {
+  try {
+    if (rec.id && typeof rec.id === 'number') {
+      const { error } = await db.from('records').upsert(rec);
+      if (error) throw error;
+    } else {
+      const { error } = await db.from('records').insert(rec);
+      if (error) throw error;
+    }
+    localStorage.setItem('panda-records', JSON.stringify(records));
+  } catch(e) {
+    console.warn('Save to DB failed, saved locally', e.message);
+    localStorage.setItem('panda-records', JSON.stringify(records));
+  }
+}
+
+async function saveCfgToDB() {
+  try {
+    await db.from('config').upsert({ key:'baby', value: cfg });
+  } catch(e) {}
+  localStorage.setItem('panda-cfg', JSON.stringify(cfg));
+}
+
+async function syncNow() {
+  showToast('同步中…');
+  await loadRecords();
+  showToast('同步完成 ✅');
+}
+
+// ══════════════════════════════════════════════════════════
+// NAV
+// ══════════════════════════════════════════════════════════
+function goPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('pg-' + name).classList.add('active');
+  document.getElementById('nb-' + name).classList.add('active');
+  if (name === 'home') { refreshHome(); }
+  if (name === 'records') { renderRecordsList(); }
+  if (name === 'log') {
+    const d = new Date();
+    document.getElementById('log-date-badge').textContent = `${d.getMonth()+1}月${d.getDate()}日`;
+    if (!editingId) resetForm();
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// FORM CONTROLS
+// ══════════════════════════════════════════════════════════
+function adj(k, d) {
+  if (k === 'temp') { fv.temp = Math.max(10, Math.min(42, fv.temp + d)); document.getElementById('pv-temp').textContent = fv.temp; }
+  if (k === 'humid') { fv.humid = Math.max(10, Math.min(100, fv.humid + d)); document.getElementById('pv-humid').textContent = fv.humid; }
+}
+
+function pick(el, multi) {
+  const g = el.dataset.g;
+  if (multi) { el.classList.toggle('on'); }
+  else {
+    document.querySelectorAll(`[data-g="${g}"]`).forEach(c => c.classList.remove('on','on-green','on-red','on-yellow'));
+    el.classList.add('on');
+  }
+}
+
+function tog(el) {
+  const g = el.dataset.g;
+  document.querySelectorAll(`[data-g="${g}"]`).forEach(b => b.classList.remove('yes','no'));
+  el.classList.add(el.dataset.v === '是' ? 'yes' : 'no');
+}
+
+function getChips(g, multi) {
+  const sel = [...document.querySelectorAll(`[data-g="${g}"].on`)].map(c => c.dataset.v);
+  return multi ? sel : (sel[0] || '');
+}
+
+function getTog(g) {
+  const el = document.querySelector(`[data-g="${g}"].yes, [data-g="${g}"].no`);
+  return el ? el.dataset.v : '';
+}
+
+function resetForm() {
+  editingId = null;
+  document.getElementById('save-btn').textContent = '💾 保存记录';
+  fv = { temp:22, humid:55 };
+  document.getElementById('pv-temp').textContent = 22;
+  document.getElementById('pv-humid').textContent = 55;
+  document.getElementById('f-wake').value = '07:00';
+  document.getElementById('f-sleep').value = '20:00';
+  document.getElementById('f-note').value = '';
+  document.querySelectorAll('.chip.on, .chip.on-green, .chip.on-red').forEach(c => c.classList.remove('on','on-green','on-red','on-yellow'));
+  document.querySelectorAll('.tog-btn.yes, .tog-btn.no').forEach(b => b.classList.remove('yes','no'));
+}
+
+function fillForm(rec) {
+  editingId = rec.id;
+  fv.temp = rec.temp || 22;
+  fv.humid = rec.humid || 55;
+  document.getElementById('pv-temp').textContent = fv.temp;
+  document.getElementById('pv-humid').textContent = fv.humid;
+  document.getElementById('f-wake').value = rec.wake_time || '07:00';
+  document.getElementById('f-sleep').value = rec.sleep_time || '20:00';
+  document.getElementById('f-note').value = rec.note || '';
+  // Chips
+  ['sleepbag','eczema','sleepq','mood','poop'].forEach(g => {
+    const v = rec[g === 'sleepq' ? 'sleep_quality' : g === 'sleepbag' ? 'sleep_bag' : g];
+    if (v) document.querySelectorAll(`[data-g="${g}"][data-v="${v}"]`).forEach(c => c.classList.add('on'));
+  });
+  const clothes = Array.isArray(rec.clothes) ? rec.clothes : [];
+  const nose = Array.isArray(rec.nose) ? rec.nose : [];
+  clothes.forEach(v => document.querySelectorAll(`[data-g="clothes"][data-v="${v}"]`).forEach(c => c.classList.add('on')));
+  nose.forEach(v => document.querySelectorAll(`[data-g="nose"][data-v="${v}"]`).forEach(c => c.classList.add('on')));
+  // Toggles
+  ['antihistamine','steroid'].forEach(g => {
+    const v = rec[g];
+    if (v) { const el = document.querySelector(`[data-g="${g}"][data-v="${v}"]`); if(el) el.classList.add(v==='是'?'yes':'no'); }
+  });
+  document.getElementById('save-btn').textContent = '💾 更新记录';
+}
+
+// ══════════════════════════════════════════════════════════
+// SAVE RECORD
+// ══════════════════════════════════════════════════════════
+async function saveRecord() {
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true; btn.textContent = '保存中…';
+
+  const today = todayStr();
+  const rec = {
+    date: today,
+    temp: fv.temp,
+    humid: fv.humid,
+    sleep_bag: getChips('sleepbag', false),
+    clothes: getChips('clothes', true),
+    nose: getChips('nose', true),
+    eczema: getChips('eczema', false),
+    poop: getChips('poop', false),
+    antihistamine: getTog('antihistamine'),
+    steroid: getTog('steroid'),
+    sleep_quality: getChips('sleepq', false),
+    mood: getChips('mood', false),
+    wake_time: document.getElementById('f-wake').value,
+    sleep_time: document.getElementById('f-sleep').value,
+    note: document.getElementById('f-note').value,
+  };
+
+  if (editingId) {
+    rec.id = editingId;
+    const idx = records.findIndex(r => r.id === editingId);
+    if (idx >= 0) records[idx] = rec; else records.unshift(rec);
+    showToast('记录已更新 ✅');
+  } else {
+    // Check duplicate date
+    const existing = records.find(r => r.date === today && !editingId);
+    if (existing) {
+      rec.id = existing.id;
+      const idx = records.indexOf(existing);
+      records[idx] = rec;
+      showToast('今日记录已更新 ✅');
+    } else {
+      records.unshift(rec);
+      showToast('记录已保存 💾');
+    }
+  }
+
+  await saveRecordToDB(rec);
+  btn.disabled = false;
+  btn.textContent = editingId ? '💾 更新记录' : '💾 保存记录';
+  editingId = null;
+  goPage('home');
+}
+
+// ══════════════════════════════════════════════════════════
+// SLEEP DURATION CALC
+// ══════════════════════════════════════════════════════════
+function calcSleep(wakeStr, sleepStr) {
+  if (!wakeStr || !sleepStr) return null;
+  const [wh, wm] = wakeStr.split(':').map(Number);
+  const [sh, sm] = sleepStr.split(':').map(Number);
+  let mins = (wh * 60 + wm) - (sh * 60 + sm);
+  if (mins <= 0) mins += 24 * 60;
+  return Math.round((mins / 60) * 10) / 10;
+}
+
+// ══════════════════════════════════════════════════════════
+// DATE HELPERS
+// ══════════════════════════════════════════════════════════
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function fmtDate(s) {
+  if (!s) return '';
+  const [y, m, d] = s.split('-');
+  return `${y}年${parseInt(m)}月${parseInt(d)}日`;
+}
+function calcAge(b) {
+  if (!b) return null;
+  const bd = new Date(b), now = new Date();
+  let y = now.getFullYear() - bd.getFullYear(), m = now.getMonth() - bd.getMonth();
+  if (m < 0) { y--; m += 12; }
+  if (now.getDate() < bd.getDate()) { m--; if (m < 0) { y--; m += 12; } }
+  return { years: y, months: m, total: y*12+m };
+}
+function ageStr(a) {
+  if (!a) return '请设置生日';
+  if (a.total < 1) return '不足1个月';
+  if (a.years === 0) return `${a.months} 个月大`;
+  if (a.months === 0) return `${a.years} 岁`;
+  return `${a.years} 岁 ${a.months} 个月大`;
+}
+
+function getFilteredRecords() {
+  const now = new Date();
+  if (currentPeriod === 'week') {
+    const cutoff = new Date(now - 7 * 86400000).toISOString().slice(0,10);
+    return records.filter(r => r.date >= cutoff);
+  }
+  if (currentPeriod === 'month') {
+    const cutoff = new Date(now - 30 * 86400000).toISOString().slice(0,10);
+    return records.filter(r => r.date >= cutoff);
+  }
+  return records;
+}
+
+// ══════════════════════════════════════════════════════════
+// SETUP
+// ══════════════════════════════════════════════════════════
+function openSetup() {
+  if (cfg.name) document.getElementById('s-name').value = cfg.name;
+  if (cfg.birthday) document.getElementById('s-bday').value = cfg.birthday;
+  if (cfg.gender) document.querySelectorAll('[data-g="gender"]').forEach(c => c.classList.toggle('on', c.dataset.v === cfg.gender));
+  syncAvUI();
+  openModal('modal-setup');
+}
+
+function saveSetup() {
+  const name = document.getElementById('s-name').value.trim();
+  const bday = document.getElementById('s-bday').value;
+  if (!name) { showToast('请输入宝宝昵称'); return; }
+  if (!bday) { showToast('请选择出生日期'); return; }
+  cfg.name = name; cfg.birthday = bday; cfg.gender = getChips('gender', false);
+  saveCfgToDB();
+  closeModal('modal-setup');
+  applyConfig();
+  refreshHome();
+  showToast('信息已保存 ✅');
+}
+
+function applyConfig() {
+  document.getElementById('hero-name').textContent = cfg.name || '宝宝';
+  const age = calcAge(cfg.birthday);
+  document.getElementById('hero-age').textContent = age ? `宝宝现在 ${ageStr(age)}` : '点击设置宝宝信息';
+  if (cfg.birthday) {
+    const b = new Date(cfg.birthday);
+    document.getElementById('hero-bday').textContent = `🎂 ${b.getFullYear()}年${b.getMonth()+1}月${b.getDate()}日`;
+  }
+  syncAvUI();
+}
+
+function handleAv(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader(); r.onload = ev => { cfg.avatar = ev.target.result; syncAvUI(); }; r.readAsDataURL(f);
+}
+
+function syncAvUI() {
+  if (cfg.avatar) {
+    document.getElementById('hero-av-em').style.display = 'none';
+    const i = document.getElementById('hero-av-img'); i.src = cfg.avatar; i.style.display = 'block';
+    document.getElementById('setup-av-em').style.display = 'none';
+    const i2 = document.getElementById('setup-av-img'); i2.src = cfg.avatar; i2.style.display = 'block';
+  }
+}
+
+function setPeriod(p, el) {
+  currentPeriod = p;
+  document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  refreshHome();
+}
+
+// ══════════════════════════════════════════════════════════
+// HOME REFRESH
+// ══════════════════════════════════════════════════════════
+function refreshHome() {
+  applyConfig();
+  const age = calcAge(cfg.birthday);
+  const ms = document.getElementById('ms-age-badge');
+  if (age) { ms.textContent = ageStr(age); renderMilestones(age.total, age.years); renderTips(age.total, age.years); }
+  updateStats();
+  renderCharts();
+  renderInsights();
+}
+
+function updateStats() {
+  const recs = getFilteredRecords();
+  if (!recs.length) {
+    ['st-sleep','st-temp','st-mood','st-ecz'].forEach(id => document.getElementById(id).textContent = '--');
+    return;
+  }
+  // Sleep avg
+  const sleepDurs = recs.map(r => calcSleep(r.wake_time, r.sleep_time)).filter(v => v !== null);
+  const avgSleep = sleepDurs.length ? (sleepDurs.reduce((a,b)=>a+b,0)/sleepDurs.length).toFixed(1) : '--';
+  // Temp avg
+  const temps = recs.map(r => r.temp).filter(Boolean);
+  const avgTemp = temps.length ? (temps.reduce((a,b)=>a+b,0)/temps.length).toFixed(1) : '--';
+  // Mood good
+  const moodGood = recs.filter(r => r.mood === '好').length;
+  // Eczema mid+
+  const eczBad = recs.filter(r => r.eczema === '中等' || r.eczema === '严重').length;
+
+  document.getElementById('st-sleep').textContent = avgSleep;
+  document.getElementById('st-temp').textContent = avgTemp;
+  document.getElementById('st-mood').textContent = moodGood;
+  document.getElementById('st-ecz').textContent = eczBad;
+}
+
+// ══════════════════════════════════════════════════════════
+// CHARTS
+// ══════════════════════════════════════════════════════════
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+Chart.defaults.font.family = "'Noto Sans SC','Microsoft YaHei',sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#4D6B58';
+
+function renderCharts() {
+  const recs = getFilteredRecords();
+  const noData = '<div style="font-size:12px;color:var(--text3);padding:8px 0;text-align:center">🐼 数据积累中，继续记录后查看</div>';
+
+  // Helper: build corr-bar HTML
+  function corrBar(label, rate, color, suffix='%', labelW='70px') {
+    return `<div class="corr-row">
+      <div class="corr-label" style="width:${labelW};font-size:10px">${label}</div>
+      <div class="corr-bar-wrap"><div class="corr-bar" style="width:${rate}%;background:${color}"></div></div>
+      <div class="corr-val" style="width:36px;font-size:10px">${suffix==='%'?rate+'%':rate+suffix}</div>
+    </div>`;
+  }
+
+  function rateColor(r) { return r > 60 ? '#F05252' : r > 30 ? '#F5A623' : '#2EB872'; }
+
+  // ── Bucket helpers ──
+  function tempBucket(t) { return t<=18?'≤18°':t<=22?'19-22°':t<=26?'23-26°':'≥27°'; }
+  function humidBucket(h) { return h<40?'<40%':h<=55?'40-55%':h<=70?'56-70%':'>70%'; }
+
+  // ── 1. Sleep line ──
+  destroyChart('sleep');
+  const slRecs = [...recs].reverse().slice(-14);
+  charts['sleep'] = new Chart(document.getElementById('chart-sleep').getContext('2d'), {
+    type:'line',
+    data:{
+      labels: slRecs.map(r=>{const d=new Date(r.date);return`${d.getMonth()+1}/${d.getDate()}`;}),
+      datasets:[{ data:slRecs.map(r=>calcSleep(r.wake_time,r.sleep_time)),
+        borderColor:'#2EB872', backgroundColor:'rgba(46,184,114,0.1)',
+        borderWidth:2.5, pointRadius:3.5, pointBackgroundColor:'#2EB872',
+        tension:0.4, fill:true, spanGaps:true }]
+    },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ y:{min:0,max:16,grid:{color:'rgba(0,0,0,0.04)'}}, x:{grid:{display:false}} } }
+  });
+
+  // ── 2. Sleep quality donut ──
+  destroyChart('sq');
+  const sqC={'好':0,'一般':0,'差':0};
+  recs.forEach(r=>{if(r.sleep_quality&&sqC[r.sleep_quality]!==undefined)sqC[r.sleep_quality]++;});
+  charts['sq'] = new Chart(document.getElementById('chart-sq').getContext('2d'), {
+    type:'doughnut',
+    data:{labels:['好','一般','差'],datasets:[{data:[sqC['好'],sqC['一般'],sqC['差']],backgroundColor:['#2EB872','#F5A623','#F05252'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:8,padding:6,font:{size:10}}}},cutout:'65%'}
+  });
+
+  // ── 3. Mood donut ──
+  destroyChart('mood');
+  const mC={'好':0,'一般':0,'差':0};
+  recs.forEach(r=>{if(r.mood&&mC[r.mood]!==undefined)mC[r.mood]++;});
+  charts['mood'] = new Chart(document.getElementById('chart-mood').getContext('2d'), {
+    type:'doughnut',
+    data:{labels:['开心','一般','烦躁'],datasets:[{data:[mC['好'],mC['一般'],mC['差']],backgroundColor:['#2EB872','#F5A623','#F05252'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:8,padding:6,font:{size:10}}}},cutout:'65%'}
+  });
+
+  // ── 4. Health frequency bar ──
+  destroyChart('health');
+  const ezC={'无':0,'轻微':0,'中等':0,'严重':0};
+  const nC={'正常':0,'轻微鼻涕':0,'严重鼻涕':0,'咳嗽':0,'打鼾':0};
+  recs.forEach(r=>{
+    if(r.eczema&&ezC[r.eczema]!==undefined)ezC[r.eczema]++;
+    if(Array.isArray(r.nose))r.nose.forEach(n=>{if(nC[n]!==undefined)nC[n]++;});
+  });
+  charts['health'] = new Chart(document.getElementById('chart-health').getContext('2d'), {
+    type:'bar',
+    data:{
+      labels:['湿疹无','湿疹轻','湿疹中','湿疹重','鼻正常','轻微涕','严重涕','咳嗽','打鼾'],
+      datasets:[{data:[ezC['无'],ezC['轻微'],ezC['中等'],ezC['严重'],nC['正常'],nC['轻微鼻涕'],nC['严重鼻涕'],nC['咳嗽'],nC['打鼾']],
+        backgroundColor:['#2EB872','#84CC16','#F5A623','#F05252','#2EB872','#F5A623','#F05252','#F05252','#8B5CF6'],
+        borderRadius:6,borderWidth:0}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.04)'},ticks:{stepSize:1}}}}
+  });
+
+  // ══ ECZEMA CORRELATIONS ══
+
+  // Temp × Eczema
+  const tEczBuckets={};
+  recs.forEach(r=>{if(!r.temp||!r.eczema)return;const k=tempBucket(r.temp);if(!tEczBuckets[k])tEczBuckets[k]={n:0,t:0};tEczBuckets[k].t++;if(r.eczema!=='无')tEczBuckets[k].n++;});
+  let h=''; ['≤18°','19-22°','23-26°','≥27°'].forEach(k=>{const v=tEczBuckets[k];if(!v)return;const r=Math.round(v.n/v.t*100);h+=corrBar(k,r,rateColor(r));});
+  document.getElementById('corr-temp-ecz').innerHTML=h||noData;
+
+  // Humid × Eczema
+  const huEczB={};
+  recs.forEach(r=>{if(!r.humid||!r.eczema)return;const k=humidBucket(r.humid);if(!huEczB[k])huEczB[k]={n:0,t:0};huEczB[k].t++;if(r.eczema!=='无')huEczB[k].n++;});
+  h=''; ['<40%','40-55%','56-70%','>70%'].forEach(k=>{const v=huEczB[k];if(!v)return;const r=Math.round(v.n/v.t*100);h+=corrBar(k,r,rateColor(r));});
+  document.getElementById('corr-humid-ecz').innerHTML=h||noData;
+
+  // Bag × Eczema
+  const bagEczB={};
+  recs.forEach(r=>{if(!r.sleep_bag||!r.eczema)return;if(!bagEczB[r.sleep_bag])bagEczB[r.sleep_bag]={n:0,t:0};bagEczB[r.sleep_bag].t++;if(r.eczema!=='无')bagEczB[r.sleep_bag].n++;});
+  h=''; Object.entries(bagEczB).forEach(([k,v])=>{const r=Math.round(v.n/v.t*100);h+=corrBar(k,r,rateColor(r),'%','76px');});
+  document.getElementById('corr-bag-ecz').innerHTML=h||noData;
+
+  // Steroid × Eczema next day
+  const stEcz={used:{n:0,t:0},notUsed:{n:0,t:0}};
+  const sortedR=[...recs].sort((a,b)=>a.date.localeCompare(b.date));
+  sortedR.forEach((r,i)=>{
+    if(i===0)return;
+    const prev=sortedR[i-1];
+    const key=prev.steroid==='是'?'used':'notUsed';
+    stEcz[key].t++;
+    if(r.eczema==='无'||r.eczema==='轻微')stEcz[key].n++;// improved or mild
+  });
+  h='';
+  if(stEcz.used.t){const r=Math.round(stEcz.used.n/stEcz.used.t*100);h+=corrBar('用药次日',r,r>60?'#2EB872':r>30?'#F5A623':'#F05252','%','76px');}
+  if(stEcz.notUsed.t){const r=Math.round(stEcz.notUsed.n/stEcz.notUsed.t*100);h+=corrBar('未用药次日',r,r>60?'#2EB872':r>30?'#F5A623':'#F05252','%','76px');}
+  document.getElementById('corr-steroid-ecz').innerHTML=h||noData;
+
+  // Antihistamine × Eczema
+  const antiEcz={yes:{n:0,t:0},no:{n:0,t:0}};
+  recs.forEach(r=>{if(!r.antihistamine||!r.eczema)return;const k=r.antihistamine==='是'?'yes':'no';antiEcz[k].t++;if(r.eczema!=='无')antiEcz[k].n++;});
+  h='';
+  if(antiEcz.yes.t){const r=Math.round(antiEcz.yes.n/antiEcz.yes.t*100);h+=corrBar('服药日',r,rateColor(r),'%','76px');}
+  if(antiEcz.no.t){const r=Math.round(antiEcz.no.n/antiEcz.no.t*100);h+=corrBar('未服药日',r,rateColor(r),'%','76px');}
+  document.getElementById('corr-anti-ecz').innerHTML=h||noData;
+
+  // ══ NOSE CORRELATIONS ══
+  function hasNose(r){return Array.isArray(r.nose)&&r.nose.some(n=>n==='轻微鼻涕'||n==='严重鼻涕'||n==='咳嗽'||n==='打鼾');}
+
+  // Temp × Nose
+  const tNoseB={};
+  recs.forEach(r=>{if(!r.temp||!r.nose)return;const k=tempBucket(r.temp);if(!tNoseB[k])tNoseB[k]={n:0,t:0};tNoseB[k].t++;if(hasNose(r))tNoseB[k].n++;});
+  h=''; ['≤18°','19-22°','23-26°','≥27°'].forEach(k=>{const v=tNoseB[k];if(!v)return;const r=Math.round(v.n/v.t*100);h+=corrBar(k,r,rateColor(r));});
+  document.getElementById('corr-temp-nose').innerHTML=h||noData;
+
+  // Humid × Nose
+  const huNoseB={};
+  recs.forEach(r=>{if(!r.humid||!r.nose)return;const k=humidBucket(r.humid);if(!huNoseB[k])huNoseB[k]={n:0,t:0};huNoseB[k].t++;if(hasNose(r))huNoseB[k].n++;});
+  h=''; ['<40%','40-55%','56-70%','>70%'].forEach(k=>{const v=huNoseB[k];if(!v)return;const r=Math.round(v.n/v.t*100);h+=corrBar(k,r,rateColor(r));});
+  document.getElementById('corr-humid-nose').innerHTML=h||noData;
+
+  // Bag × Nose
+  const bagNoseB={};
+  recs.forEach(r=>{if(!r.sleep_bag||!r.nose)return;if(!bagNoseB[r.sleep_bag])bagNoseB[r.sleep_bag]={n:0,t:0};bagNoseB[r.sleep_bag].t++;if(hasNose(r))bagNoseB[r.sleep_bag].n++;});
+  h=''; Object.entries(bagNoseB).forEach(([k,v])=>{const r=Math.round(v.n/v.t*100);h+=corrBar(k,r,rateColor(r),'%','76px');});
+  document.getElementById('corr-bag-nose').innerHTML=h||noData;
+
+  // Antihistamine × Nose
+  const antiNose={yes:{n:0,t:0},no:{n:0,t:0}};
+  recs.forEach(r=>{if(!r.antihistamine||!r.nose)return;const k=r.antihistamine==='是'?'yes':'no';antiNose[k].t++;if(hasNose(r))antiNose[k].n++;});
+  h='';
+  if(antiNose.yes.t){const r=Math.round(antiNose.yes.n/antiNose.yes.t*100);h+=corrBar('服药日',r,rateColor(r),'%','76px');}
+  if(antiNose.no.t){const r=Math.round(antiNose.no.n/antiNose.no.t*100);h+=corrBar('未服药日',r,rateColor(r),'%','76px');}
+  document.getElementById('corr-anti-nose').innerHTML=h||noData;
+
+  // ══ SLEEP CORRELATIONS ══
+
+  // Bag × Sleep quality
+  const bagSlB={};
+  recs.forEach(r=>{if(!r.sleep_bag||!r.sleep_quality)return;if(!bagSlB[r.sleep_bag])bagSlB[r.sleep_bag]={g:0,t:0};bagSlB[r.sleep_bag].t++;if(r.sleep_quality==='好')bagSlB[r.sleep_bag].g++;});
+  h=''; Object.entries(bagSlB).forEach(([k,v])=>{const r=Math.round(v.g/v.t*100);const c=r>60?'#2EB872':r>30?'#F5A623':'#F05252';h+=corrBar(k,r,c,'%','76px');});
+  document.getElementById('corr-bag-sleep').innerHTML=h||noData;
+
+  // Mood × Sleep duration
+  const mSlB={'好':[],'一般':[],'差':[]};
+  recs.forEach(r=>{const sl=calcSleep(r.wake_time,r.sleep_time);if(r.mood&&sl&&mSlB[r.mood])mSlB[r.mood].push(sl);});
+  const mLabels={'好':'😄 开心','一般':'😐 一般','差':'😢 烦躁'};
+  const mColors={'好':'#2EB872','一般':'#F5A623','差':'#F05252'};
+  let maxSl=12; Object.values(mSlB).forEach(a=>{if(a.length)maxSl=Math.max(maxSl,Math.max(...a));});
+  h=''; Object.entries(mSlB).forEach(([m,a])=>{
+    if(!a.length)return;
+    const avg=Math.round(a.reduce((x,y)=>x+y,0)/a.length*10)/10;
+    const pct=Math.round(avg/maxSl*100);
+    h+=corrBar(mLabels[m],pct,mColors[m],'%','68px').replace(`${pct}%`,`${avg}h`);
+  });
+  document.getElementById('corr-mood-sleep').innerHTML=h||noData;
+}
+
+// ══════════════════════════════════════════════════════════
+// AI INSIGHTS
+// ══════════════════════════════════════════════════════════
+function renderInsights() {
+  const recs = getFilteredRecords();
+  const items = [];
+  if (recs.length < 3) { document.getElementById('insight-items').innerHTML = '<div class="insight-item" style="color:var(--text3)">至少记录3天后可查看智能建议</div>'; return; }
+
+  // Sleep avg
+  const sleepDurs = recs.map(r => calcSleep(r.wake_time, r.sleep_time)).filter(Boolean);
+  const avgSl = sleepDurs.length ? sleepDurs.reduce((a,b)=>a+b,0)/sleepDurs.length : null;
+  if (avgSl !== null) {
+    if (avgSl < 9) items.push(`平均睡眠 ${avgSl.toFixed(1)} 小时，略显不足。建议提前15-30分钟开始睡前仪式，有助于延长夜间睡眠。`);
+    else if (avgSl >= 11) items.push(`平均睡眠 ${avgSl.toFixed(1)} 小时，非常充足！保持当前作息规律。`);
+    else items.push(`平均睡眠 ${avgSl.toFixed(1)} 小时，处于健康范围。`);
+  }
+
+  // Eczema vs temp
+  const highTempEcz = recs.filter(r => r.temp >= 25 && r.eczema && r.eczema !== '无').length;
+  const highTempTotal = recs.filter(r => r.temp >= 25).length;
+  if (highTempTotal >= 3 && highTempEcz/highTempTotal > 0.5) {
+    items.push(`室温≥25°C时湿疹发生率较高（${Math.round(highTempEcz/highTempTotal*100)}%）。建议控制室温在22-24°C，可能有助于减少湿疹。`);
+  }
+
+  // Steroid usage
+  const steroidDays = recs.filter(r => r.steroid === '是').length;
+  if (steroidDays > recs.length * 0.5) {
+    items.push(`近期激素药膏使用频率较高（${steroidDays}/${recs.length}天）。建议记录使用量，避免连续使用超过2周，可与医生讨论替代方案。`);
+  }
+
+  // Mood vs sleep correlation
+  const goodMoodSleep = recs.filter(r => r.mood === '好').map(r => calcSleep(r.wake_time, r.sleep_time)).filter(Boolean);
+  const badMoodSleep = recs.filter(r => r.mood === '差').map(r => calcSleep(r.wake_time, r.sleep_time)).filter(Boolean);
+  if (goodMoodSleep.length >= 2 && badMoodSleep.length >= 2) {
+    const goodAvg = goodMoodSleep.reduce((a,b)=>a+b,0)/goodMoodSleep.length;
+    const badAvg = badMoodSleep.reduce((a,b)=>a+b,0)/badMoodSleep.length;
+    if (goodAvg - badAvg > 0.5) {
+      items.push(`数据显示宝宝睡眠充足时心情更好（好心情平均睡 ${goodAvg.toFixed(1)}h，烦躁时仅 ${badAvg.toFixed(1)}h）。充足睡眠对情绪影响显著。`);
+    }
+  }
+
+  // Best sleep bag
+  const bagGood = {};
+  recs.forEach(r => {
+    if (!r.sleep_bag || !r.sleep_quality) return;
+    if (!bagGood[r.sleep_bag]) bagGood[r.sleep_bag] = {g:0,t:0};
+    bagGood[r.sleep_bag].t++;
+    if (r.sleep_quality === '好') bagGood[r.sleep_bag].g++;
+  });
+  let bestBag = null, bestRate = 0;
+  Object.entries(bagGood).forEach(([bag,v]) => { if(v.t>=2){ const r=v.g/v.t; if(r>bestRate){bestRate=r;bestBag=bag;} } });
+  if (bestBag && bestRate > 0.6) {
+    items.push(`穿 "${bestBag}" 时睡眠质量最佳（好睡眠占比 ${Math.round(bestRate*100)}%）。可作为首选睡袋。`);
+  }
+
+  if (!items.length) items.push('数据积累中，继续记录可获得更精准的分析建议。');
+
+  document.getElementById('insight-items').innerHTML = items.map(t => `<div class="insight-item">${t}</div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// MILESTONES
+// ══════════════════════════════════════════════════════════
+const MS_DATA = [
+  {min:0,max:2,e:'👁️',t:'追视移动物体',d:'眼神开始聚焦，能追踪20-30厘米内的移动物体。',c:'视觉'},
+  {min:1,max:3,e:'😊',t:'社交性微笑',d:'看到照顾者的脸时出现有意识的微笑。',c:'社交'},
+  {min:2,max:4,e:'🗣️',t:'咿呀发声',d:'开始发出"啊啊""哦哦"等元音声音。',c:'语言'},
+  {min:3,max:6,e:'🙃',t:'俯趴抬头45-90°',d:'趴着时能稳定抬头，颈背肌肉快速增强。',c:'大运动'},
+  {min:3,max:5,e:'😂',t:'大声笑出来',d:'第一次发出开心的笑声，情绪发展里程碑。',c:'社交'},
+  {min:4,max:7,e:'🎲',t:'翻身（仰→俯）',d:'从仰卧翻到俯卧，核心肌群力量发展。',c:'大运动'},
+  {min:5,max:8,e:'🍽️',t:'辅食添加准备',d:'对食物感兴趣，头部控制良好，可开始辅食。',c:'饮食'},
+  {min:6,max:9,e:'🧸',t:'独立坐稳',d:'无需支撑能稳定坐立，核心力量成熟。',c:'大运动'},
+  {min:7,max:10,e:'🔍',t:'物体恒存概念',d:'理解物体被藏起来仍然存在，会主动寻找。',c:'认知'},
+  {min:8,max:12,e:'🚶',t:'扶物站立',d:'借助支撑物站立并尝试迈步。',c:'大运动'},
+  {min:10,max:14,e:'👆',t:'食指指物',d:'用食指指向感兴趣的事物，沟通意图发展。',c:'精细动作'},
+  {min:11,max:15,e:'🗣️',t:'叫爸爸妈妈',d:'有意识地叫出"爸爸"或"妈妈"。',c:'语言'},
+  {min:12,max:18,e:'👟',t:'独立行走',d:'不依靠支撑独立行走！',c:'大运动'},
+  {min:15,max:24,e:'📢',t:'词汇爆发期',d:'快速积累词汇，开始说短句。',c:'语言'},
+  {min:18,max:28,e:'🎨',t:'拿笔涂鸦',d:'开始用笔在纸上涂鸦，创造力发展。',c:'精细动作'},
+  {min:24,max:36,e:'🧩',t:'两词短句',d:'能说"妈妈抱""要吃饭"等短句，语言大跃进。',c:'语言'},
+  {min:36,max:48,e:'✂️',t:'用剪刀剪直线',d:'能用儿童剪刀沿直线剪纸，手眼协调新高度。',c:'精细动作'},
+  {min:36,max:48,e:'🔢',t:'数到10以上',d:'能流畅数到10，开始理解数量关系。',c:'认知'},
+  {min:48,max:60,e:'🤸',t:'单脚跳跃平衡',d:'能单脚跳跃并保持平衡，协调性显著提升。',c:'大运动'},
+  {min:60,max:84,e:'📚',t:'开始识字阅读',d:'开始识别汉字，理解文字与意义的对应关系。',c:'语言'},
+  {min:60,max:84,e:'🧮',t:'10以内加减法',d:'能进行10以内加减法运算，数学逻辑发展。',c:'认知'},
+  {min:72,max:96,e:'🚴',t:'骑两轮自行车',d:'能骑无辅助轮自行车，平衡感成熟。',c:'大运动'},
+];
+const OLDER_TIPS = {
+  3: ['语言爆发期：每天亲子阅读，丰富词汇量。','建立明确规则和界限，"自然后果"教育效果好。','创意活动：绘画、剪贴、泥工促进精细动作。','多户外活动，球类攀爬是这个年龄的最爱。'],
+  4: ['好奇心旺盛期：鼓励探索，回答所有"为什么"。','同伴关系开始重要，创造社交玩耍机会。','注意力可持续10-15分钟，适合开始兴趣班。','语言快速发展，可以游戏化方式开始汉字启蒙。'],
+  5: ['幼小衔接：重点培养习惯而非提前学科内容。','每天保证至少1小时户外活动，保护视力。','教导情绪命名和深呼吸等自我调节方法。','可以开始分担适龄家务，培养责任感。'],
+  6: ['关注入学情绪和社交适应，学业排在其次。','每天亲子阅读或独立阅读30分钟。','制定明确屏幕时间规则，娱乐性≤1小时/天。','强调努力过程而非结果，培养成长型思维。'],
+};
+
+function renderMilestones(total, years) {
+  const el = document.getElementById('ms-list');
+  const current = MS_DATA.filter(m => total >= m.min && total <= m.max);
+  const upcoming = MS_DATA.filter(m => total < m.min && m.min <= total + 4);
+  const recent = MS_DATA.filter(m => total > m.max && m.max >= total - 4);
+  let html = '';
+  current.slice(0,3).forEach(m => { html += msCard(m,'current'); });
+  upcoming.slice(0,2).forEach(m => { html += msCard(m,'upcoming'); });
+  recent.slice(0,1).forEach(m => { html += msCard(m,'done'); });
+  const tkey = Math.min(years, 6);
+  if (years >= 3 && OLDER_TIPS[tkey]) {
+    html += `<div class="ms-card" style="border-left-color:var(--yellow)"><div class="ms-em">💡</div><div class="ms-body"><h4>${tkey}岁育儿重点</h4>${OLDER_TIPS[tkey].slice(0,3).map(t=>`<p style="margin-bottom:4px">• ${t}</p>`).join('')}<span class="ms-tag" style="background:var(--yellow-light);color:var(--yellow)">育儿提示</span></div></div>`;
+  }
+  if (!html) html = '<div class="empty"><div class="empty-icon">🌟</div><p>该月龄暂无具体里程碑</p></div>';
+  el.innerHTML = html;
+}
+
+function msCard(m, type) {
+  const colors = { current:['var(--pri)','var(--pri-light)','var(--pri-d)','📍 当前阶段'], upcoming:['var(--yellow)','var(--yellow-light)','var(--yellow)','⏳ 即将到来'], done:['var(--pri-d)','#D0F5E6','var(--pri-d)','✅ 已达成'] };
+  const [bc, bg, tc, label] = colors[type];
+  return `<div class="ms-card ${type==='done'?'done':type==='upcoming'?'upcoming':''}">
+    <div class="ms-em">${m.e}</div>
+    <div class="ms-body"><h4>${m.t}${type==='done'?' ✓':''}</h4><p>${m.d}</p>
+    <span class="ms-tag" style="background:${bg};color:${tc}">${label} · ${m.c}</span>
+    </div></div>`;
+}
+
+const ACT = {
+  '0-3': [{e:'🤱',t:'肌肤接触',d:'皮肤对皮肤接触增强亲子联结和安全感。'},{e:'👁️',t:'面对面对视',d:'夸张表情和宝宝对视，促进视觉和社交发展。'},{e:'🎵',t:'轻声哼唱',d:'哼唱儿歌安抚情绪，同时促进语言感知。'},{e:'🤲',t:'被动操',d:'轻柔活动四肢，促进血液循环和身体感知。'}],
+  '4-6': [{e:'🏋️',t:'趴趴练习',d:'每天多次，每次5-10分钟，为翻身爬行打基础。'},{e:'🪞',t:'镜子游戏',d:'一起照镜子，促进自我认知发展。'},{e:'🔔',t:'听声找物',d:'不同方向摇铃，训练听觉追踪反应。'},{e:'🗣️',t:'模仿发声',d:'模仿宝宝咿呀声，建立双向沟通意识。'}],
+  '7-12': [{e:'📦',t:'藏猫猫',d:'建立物体恒存概念，锻炼记忆力和期待感。'},{e:'📚',t:'厚纸板书',d:'每天睡前阅读10-15分钟，培养阅读习惯。'},{e:'🎵',t:'音乐节奏',d:'一起打节拍摇铃，促进神经发育。'},{e:'🧱',t:'积木探索',d:'抓握敲打积木，手眼协调和因果认知发展。'}],
+  '13-18': [{e:'🚶',t:'自由学步',d:'提供安全空间，放手让宝宝跌倒再站起来。'},{e:'🎨',t:'手指涂鸦',d:'无毒颜料手指画，感官体验和创造力发展。'},{e:'📚',t:'指认图书',d:'鼓励指认图中物品，快速建立词汇理解。'},{e:'🏠',t:'参与家务',d:'帮忙拿东西放玩具，培养自主能力。'}],
+  '19-36': [{e:'🎭',t:'过家家',d:'假扮游戏发展想象力和语言能力。'},{e:'🌿',t:'自然探索',d:'捡叶子观察小虫，激发好奇心和科学思维。'},{e:'✂️',t:'撕纸剪贴',d:'撕纸贴贴纸，锻炼精细动作和创造力。'},{e:'🎵',t:'律动音乐',d:'随音乐跳舞，节奏感和大运动协调发展。'}],
+  '37+': [{e:'🧩',t:'拼图游戏',d:'从简单到复杂，训练空间推理和耐心。'},{e:'🌱',t:'种植小盆栽',d:'一起种植物，学习观察耐心和自然科学。'},{e:'♟️',t:'桌游棋类',d:'培养规则意识、逻辑和社交能力。'},{e:'📚',t:'独立阅读',d:'逐步过渡到独立阅读，维持阅读习惯。'}],
+};
+
+function renderTips(total, years) {
+  const g = total<=3?'0-3':total<=6?'4-6':total<=12?'7-12':total<=18?'13-18':total<=36?'19-36':'37+';
+  const acts = ACT[g] || [];
+  let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">`;
+  acts.forEach(a => { html += `<div class="chart-card" style="margin-bottom:0;text-align:center"><div style="font-size:26px;margin-bottom:6px">${a.e}</div><div style="font-size:12px;font-weight:700;margin-bottom:3px">${a.t}</div><div style="font-size:11px;color:var(--text2);line-height:1.4">${a.d}</div></div>`; });
+  html += '</div>';
+  document.getElementById('tips-list').innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════
+// RECORDS LIST
+// ══════════════════════════════════════════════════════════
+function renderRecordsList(filter) {
+  const el = document.getElementById('rec-list');
+  let recs = [...records];
+  if (filter) {
+    const q = filter.toLowerCase();
+    recs = recs.filter(r => r.date.includes(q) || (r.note && r.note.toLowerCase().includes(q)));
+  }
+  if (!recs.length) {
+    el.innerHTML = '<div class="empty" style="padding-top:48px"><div class="empty-icon">📋</div><p>还没有记录<br>去填写今日情况吧～</p></div>';
+    return;
+  }
+  el.innerHTML = recs.map(r => {
+    let chips = '';
+    if (r.temp) chips += `<span class="rc rc-b">${r.temp}°C</span>`;
+    if (r.sleep_quality) chips += `<span class="rc ${r.sleep_quality==='好'?'rc-g':r.sleep_quality==='差'?'rc-r':'rc-y'}">睡眠${r.sleep_quality}</span>`;
+    if (r.eczema && r.eczema !== '无') chips += `<span class="rc ${r.eczema==='严重'?'rc-r':'rc-y'}">湿疹${r.eczema}</span>`;
+    if (r.mood) chips += `<span class="rc ${r.mood==='好'?'rc-b':r.mood==='差'?'rc-r':'rc-y'}">${r.mood==='好'?'😄开心':r.mood==='差'?'😢烦躁':'😐一般'}</span>`;
+    const sl = calcSleep(r.wake_time, r.sleep_time);
+    if (sl) chips += `<span class="rc rc-p">睡${sl}h</span>`;
+    const nose = Array.isArray(r.nose) ? r.nose.filter(n=>n!=='正常') : [];
+    if (nose.length) chips += `<span class="rc rc-r">${nose[0]}</span>`;
+    return `<div class="rec-item" onclick="showDetail('${r.date}')">
+      <div class="rec-date">${fmtDate(r.date)}</div>
+      <div class="rec-chips">${chips}</div>
+      ${r.note ? `<div class="rec-note">📝 ${r.note.slice(0,40)}${r.note.length>40?'…':''}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function filterRecords() {
+  renderRecordsList(document.getElementById('rec-search').value);
+}
+
+// ══════════════════════════════════════════════════════════
+// DETAIL MODAL
+// ══════════════════════════════════════════════════════════
+function showDetail(date) {
+  const rec = records.find(r => r.date === date);
+  if (!rec) return;
+  currentDetailId = rec.id || date;
+  document.getElementById('detail-title').textContent = fmtDate(date);
+  const fields = [
+    ['🌡️ 室温 / 湿度', rec.temp ? `${rec.temp}°C / ${rec.humid}%` : '--'],
+    ['👕 睡袋', rec.sleep_bag || '--'],
+    ['👕 衣服', Array.isArray(rec.clothes) ? rec.clothes.join('、') || '--' : '--'],
+    ['🤧 鼻子情况', Array.isArray(rec.nose) ? rec.nose.join('、') || '--' : '--'],
+    ['🩺 湿疹', rec.eczema || '--'],
+    ['💩 大便', rec.poop || '--'],
+    ['💊 抗过敏药', rec.antihistamine || '--'],
+    ['💊 激素药膏', rec.steroid || '--'],
+    ['⏰ 起床时间', rec.wake_time || '--'],
+    ['⏰ 入睡时间', rec.sleep_time || '--'],
+    ['😴 睡眠质量', rec.sleep_quality || '--'],
+    ['😄 今日心情', rec.mood ? (rec.mood==='好'?'😄 开心':rec.mood==='差'?'😢 烦躁':'😐 一般') : '--'],
+  ];
+  const sl = calcSleep(rec.wake_time, rec.sleep_time);
+  if (sl) fields.splice(10, 0, ['⏱️ 睡眠时长', `${sl} 小时`]);
+  let html = '';
+  const half = Math.ceil(fields.length / 2);
+  fields.forEach(([label, val]) => {
+    html += `<div class="detail-section"><div class="detail-label">${label}</div><div class="detail-value">${val}</div></div>`;
+  });
+  if (rec.note) html += `<div class="detail-section"><div class="divider"></div><div class="detail-label">📝 备注</div><div class="detail-value" style="line-height:1.7">${rec.note}</div></div>`;
+  document.getElementById('detail-body').innerHTML = html;
+  openModal('modal-detail');
+}
+
+function editRecord() {
+  const rec = records.find(r => r.id === currentDetailId || r.date === currentDetailId);
+  if (!rec) return;
+  closeModal('modal-detail');
+  resetForm();
+  fillForm(rec);
+  goPage('log');
+}
+
+// ══════════════════════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════════════════════
+function exportCSV() {
+  if (!records.length) { showToast('暂无数据可导出'); return; }
+  const hdr = ['日期','室温','湿度','睡袋','衣服','鼻子','湿疹','大便','抗过敏药','激素药膏','起床','入睡','睡眠时长(h)','睡眠质量','心情','备注'];
+  const rows = records.map(r => [
+    r.date, r.temp||'', r.humid||'',
+    r.sleep_bag||'',
+    (Array.isArray(r.clothes)?r.clothes:[]).join('/'),
+    (Array.isArray(r.nose)?r.nose:[]).join('/'),
+    r.eczema||'', r.poop||'', r.antihistamine||'', r.steroid||'',
+    r.wake_time||'', r.sleep_time||'',
+    calcSleep(r.wake_time, r.sleep_time)||'',
+    r.sleep_quality||'', r.mood||'',
+    (r.note||'').replace(/,/g,'，').replace(/\n/g,' ')
+  ]);
+  const csv = '\uFEFF' + [hdr,...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download = `${cfg.name||'宝宝'}_成长记录_${todayStr()}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  showToast('CSV 已下载 📊');
+}
+
+// ══════════════════════════════════════════════════════════
+// MODAL HELPERS
+// ══════════════════════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function bgClose(e, id) { if (e.target.id === id) closeModal(id); }
+
+// ══════════════════════════════════════════════════════════
+// LOADING & TOAST
+// ══════════════════════════════════════════════════════════
+let loadingEl = null;
+function showLoading(on) {
+  if (on) {
+    if (!loadingEl) { loadingEl = document.createElement('div'); loadingEl.className='loading-overlay'; loadingEl.innerHTML='<div class="spinner"></div>'; document.body.appendChild(loadingEl); }
+  } else {
+    if (loadingEl) { loadingEl.remove(); loadingEl = null; }
+  }
+}
+function showToast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+document.getElementById('log-date-badge').textContent = (() => { const d=new Date(); return `${d.getMonth()+1}月${d.getDate()}日`; })();
+loadRecords();
+</script>
+
+<!-- SUPABASE SQL NOTE (shown in console) -->
+<script>
+console.log(`
+══════════════════════════════════════════════════
+请在 Supabase SQL Editor 执行以下 SQL 建立数据表：
+
+CREATE TABLE IF NOT EXISTS records (
+  id BIGSERIAL PRIMARY KEY,
+  date TEXT NOT NULL,
+  temp INT, humid INT,
+  sleep_bag TEXT, clothes JSONB, nose JSONB,
+  eczema TEXT, poop TEXT,
+  antihistamine TEXT, steroid TEXT,
+  wake_time TEXT, sleep_time TEXT,
+  sleep_quality TEXT, mood TEXT,
+  note TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS config (
+  key TEXT PRIMARY KEY,
+  value JSONB
+);
+
+ALTER TABLE records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE config ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "public_all_records" ON records FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "public_all_config" ON config FOR ALL USING (true) WITH CHECK (true);
+══════════════════════════════════════════════════
+`);
+</script>
+</body>
+</html>
